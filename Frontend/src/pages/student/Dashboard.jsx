@@ -1,0 +1,69 @@
+import DashboardLayout from '../../layouts/DashboardLayout';
+import { useAuth } from '../../contexts/AuthContext';
+import { listAnnouncements } from '../../api/announcements';
+import { listEvents } from '../../api/events';
+import { useEffect, useState } from 'react';
+import AnnouncementCard from '../../components/cards/AnnouncementCard';
+import EventCard from '../../components/cards/EventCard';
+import { listSaved, saveItem } from '../../api/saved';
+
+export default function StudentDashboard(){
+  const { user, token } = useAuth();
+  const [anns, setAnns] = useState([]);
+  const [events, setEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [savedAnns, setSavedAnns] = useState(new Set());
+  const [savedEvents, setSavedEvents] = useState(new Set());
+
+  useEffect(() => {
+    (async () => {
+      try{
+        const [a, e, saved] = await Promise.all([listAnnouncements(), listEvents(), listSaved(token)]);
+        setAnns(a); setEvents(e);
+        // Build sets for quick lookup
+        const sa = new Set();
+        const se = new Set();
+        (saved || []).forEach(s => {
+          if (s.item_type === 'announcement') sa.add(s.item_id);
+          else if (s.item_type === 'event') se.add(s.item_id);
+        });
+        setSavedAnns(sa); setSavedEvents(se);
+      } catch(err){ setError('Failed to load data'); }
+      finally { setLoading(false); }
+    })();
+  }, [token]);
+
+  async function onSaveAnnouncement(item){
+    try{
+      const ok = await saveItem(token, item.id, 'announcement');
+      if (ok) setSavedAnns(prev => new Set(prev).add(item.id));
+    } catch(err){console.log(err)}
+  }
+
+  async function onSaveEvent(item){
+    try{
+      const ok = await saveItem(token, item.id, 'event');
+      if (ok) setSavedEvents(prev => new Set(prev).add(item.id));
+    } catch(err){console.log(err)}
+  }
+
+  return (
+    <DashboardLayout>
+      <h2>Welcome, {user?.name || 'Student'}</h2>
+      {loading && <div className="loader" />}
+      {error && <div className="error">{error}</div>}
+      <div className="grid grid-cards">
+        {anns.map(a => (
+          <AnnouncementCard key={a.id} item={a} onSave={onSaveAnnouncement} saved={savedAnns.has(a.id)} />
+        ))}
+      </div>
+      <h3 className="section-title">Events</h3>
+      <div className="grid grid-cards">
+        {events.map(ev => (
+          <EventCard key={ev.id} item={ev} onSave={onSaveEvent} saved={savedEvents.has(ev.id)} />
+        ))}
+      </div>
+    </DashboardLayout>
+  );
+}
