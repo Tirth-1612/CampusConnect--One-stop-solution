@@ -1,48 +1,40 @@
-const db = require('../database');
+import { supabase } from '../database.js';
 
 const VALID_TYPES = ['announcement', 'event'];
 
 async function saveItem(req, res) {
   try {
     const userId = req.user?.userId;
-    const { item_id, item_type } = req.body;
-
-    if (!userId || !item_id || !item_type) {
-      return res.status(400).json({ ok: false });
+    const { item_id, item_type } = req.body || {};
+    if (!userId || !item_id || !item_type || !VALID_TYPES.includes(item_type)) {
+      return res.status(400).json({ ok: false, error: 'Invalid input' });
     }
 
-    // 1️⃣ Verify item exists
-    let existsQuery;
-    if (item_type === 'announcement') {
-      existsQuery = 'SELECT 1 FROM announcements WHERE id = $1';
-    } else if (item_type === 'event') {
-      existsQuery = 'SELECT 1 FROM events WHERE id = $1';
-    } else {
-      return res.status(400).json({ ok: false });
-    }
+    // 1) Verify target exists in appropriate table
+    const targetTable = item_type === 'announcement' ? 'announcements' : 'events';
+    const { data: target, error: targetErr } = await supabase
+      .from(targetTable)
+      .select('id')
+      .eq('id', item_id)
+      .limit(1);
+    if (targetErr) return res.status(500).json({ ok:false, error: targetErr.message });
+    if (!target || !target.length) return res.status(400).json({ ok:false, error: 'Target item does not exist' });
 
-    const itemExists = await db.query(existsQuery, [item_id]);
-    if (itemExists.rowCount === 0) {
-      return res.status(400).json({ ok: false });
-    }
+    // 2) Check duplicate for this user and item (regardless of type per contract)
+    const { data: dup, error: dupErr } = await supabase
+      .from('saved_items')
+      .select('user_id')
+      .eq('user_id', userId)
+      .eq('item_id', item_id)
+      .limit(1);
+    if (dupErr) return res.status(500).json({ ok:false, error: dupErr.message });
+    if (dup && dup.length) return res.json({ ok: true, saved: false });
 
-    // 2️⃣ Prevent duplicate saves
-    const alreadySaved = await db.query(
-      `SELECT 1 FROM saved_items WHERE user_id = $1 AND item_id = $2`,
-      [userId, item_id]
-    );
-
-    if (alreadySaved.rowCount > 0) {
-      return res.json({ ok: true, saved: false });
-    }
-
-    // 3️⃣ Safe insert (NO FK violation possible)
-    await db.query(
-      `INSERT INTO saved_items (user_id, item_id, item_type)
-       VALUES ($1, $2, $3)`,
-      [userId, item_id, item_type]
-    );
-
+    // 3) Insert
+    const { error: insErr } = await supabase
+      .from('saved_items')
+      .insert([{ user_id: userId, item_id, item_type }]);
+    if (insErr) return res.status(500).json({ ok:false, error: insErr.message });
     return res.json({ ok: true, saved: true });
 
   } catch (err) {
@@ -55,32 +47,40 @@ async function saveItem(req, res) {
 async function listSaved(req, res) {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const { rows } = await db.query(
-      'SELECT user_id, item_id, item_type, saved_at FROM saved_items WHERE user_id = $1 ORDER BY saved_at DESC',
-      [req.user.userId]
-    );
-    return res.json(rows);
+    const { data, error } = await supabase
+      .from('saved_items')
+      .select('user_id,item_id,item_type,saved_at')
+      .eq('user_id', req.user.userId)
+      .order('saved_at', { ascending: false });
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(data || []);
   } catch (err) {
     console.error('listSaved error:', err);
     return res.status(500).json({ error: 'Internal Server Error', detail: err?.message });
   }
 }
 
-module.exports = { saveItem, listSaved };
+export { saveItem, listSaved };
 
 // Saved announcements with join
 async function listSavedAnnouncements(req, res){
   try{
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const { rows } = await db.query(
-      `SELECT a.*
-       FROM saved_items si
-       JOIN announcements a ON a.id = si.item_id
-       WHERE si.user_id = $1 AND si.item_type = 'announcement'
-       ORDER BY si.saved_at DESC`,
-      [req.user.userId]
-    );
-    return res.json(rows);
+    const { data: saved, error: savedErr } = await supabase
+      .from('saved_items')
+      .select('item_id')
+      .eq('user_id', req.user.userId)
+      .eq('item_type', 'announcement')
+      .order('saved_at', { ascending: false });
+    if (savedErr) return res.status(500).json({ error: savedErr.message });
+    const ids = (saved || []).map(r => r.item_id);
+    if (!ids.length) return res.json([]);
+    const { data, error } = await supabase
+      .from('announcements')
+      .select('*')
+      .in('id', ids);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(data || []);
   } catch(err){
     console.error('listSavedAnnouncements error:', err);
     return res.status(500).json({ error: 'Internal Server Error', detail: err?.message });
@@ -91,20 +91,25 @@ async function listSavedAnnouncements(req, res){
 async function listSavedEvents(req, res){
   try{
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
-    const { rows } = await db.query(
-      `SELECT e.*
-       FROM saved_items si
-       JOIN events e ON e.id = si.item_id
-       WHERE si.user_id = $1 AND si.item_type = 'event'
-       ORDER BY si.saved_at DESC`,
-      [req.user.userId]
-    );
-    return res.json(rows);
+    const { data: saved, error: savedErr } = await supabase
+      .from('saved_items')
+      .select('item_id')
+      .eq('user_id', req.user.userId)
+      .eq('item_type', 'event')
+      .order('saved_at', { ascending: false });
+    if (savedErr) return res.status(500).json({ error: savedErr.message });
+    const ids = (saved || []).map(r => r.item_id);
+    if (!ids.length) return res.json([]);
+    const { data, error } = await supabase
+      .from('events')
+      .select('*')
+      .in('id', ids);
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json(data || []);
   } catch(err){
     console.error('listSavedEvents error:', err);
     return res.status(500).json({ error: 'Internal Server Error', detail: err?.message });
   }
 }
 
-module.exports.listSavedAnnouncements = listSavedAnnouncements;
-module.exports.listSavedEvents = listSavedEvents;
+export { listSavedAnnouncements, listSavedEvents };

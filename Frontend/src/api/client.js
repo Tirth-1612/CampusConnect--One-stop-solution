@@ -1,6 +1,6 @@
 import { storage, TOKEN_KEY, USER_KEY } from '../utils/storage';
 
-const BASE_URL = 'http://localhost:5000';
+const BASE_URL = import.meta.env.VITE_API_URL;
 
 function authHeaders(token) {
   const headers = { 'Content-Type': 'application/json' };

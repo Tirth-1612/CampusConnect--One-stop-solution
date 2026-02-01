@@ -1,5 +1,5 @@
-const db = require('../database');
-const { insertDynamic, selectAll } = require('../modules/dbUtil');
+import { supabase } from '../database.js';
+import { insertDynamic, selectAll } from '../modules/dbUtil.js';
 
 async function listClubs(req, res) {
   try {
@@ -15,15 +15,19 @@ async function listClubsWithStatus(req, res) {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const userId = req.user.userId;
-    const { rows } = await db.query(
-      `SELECT c.*, uc.status AS membership_status
-       FROM clubs c
-       LEFT JOIN user_clubs uc
-         ON uc.club_id = c.id AND uc.user_id = $1
-       ORDER BY c.id ASC`,
-      [userId]
-    );
-    return res.json(rows);
+    const { data: clubs, error: clubsErr } = await supabase
+      .from('clubs')
+      .select('*')
+      .order('id', { ascending: true });
+    if (clubsErr) return res.status(500).json({ error: clubsErr.message });
+    const { data: memberships, error: memErr } = await supabase
+      .from('user_clubs')
+      .select('club_id,status')
+      .eq('user_id', userId);
+    if (memErr) return res.status(500).json({ error: memErr.message });
+    const statusMap = new Map((memberships || []).map(m => [String(m.club_id), m.status]));
+    const out = (clubs || []).map(c => ({ ...c, membership_status: statusMap.get(String(c.id)) || null }));
+    return res.json(out);
   } catch (err) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -39,14 +43,11 @@ async function createClub(req, res) {
     // Add creator as club admin in user_clubs
     try {
       if (inserted && inserted.id) {
-        await db.query(
-          'INSERT INTO user_clubs (user_id, club_id, role, status) VALUES ($1, $2, $3, $4)',
-          [req.user.userId, inserted.id, 'admin', 'approved']
-        );
+        await supabase
+          .from('user_clubs')
+          .insert([{ user_id: req.user.userId, club_id: inserted.id, role: 'admin', status: 'approved' }]);
       }
-    } catch (e) {
-      // Ignore linkage failure; primary response still succeeds
-    }
+    } catch (e) { /* ignore linkage failure */ }
     return res.status(201).json(inserted);
   } catch (err) {
     return res.status(500).json({ error: 'Internal Server Error' });
@@ -62,18 +63,21 @@ async function joinClub(req, res) {
     if (!clubId) return res.status(400).json({ error: 'clubId is required' });
 
     // Prevent duplicates
-    const exists = await db.query(
-      'SELECT 1 FROM user_clubs WHERE user_id = $1 AND club_id = $2 LIMIT 1',
-      [userId, clubId]
-    );
-    if (exists.rows.length) {
+    const { data: exists, error: exErr } = await supabase
+      .from('user_clubs')
+      .select('user_id')
+      .eq('user_id', userId)
+      .eq('club_id', clubId)
+      .limit(1);
+    if (exErr) return res.status(500).json({ error: exErr.message });
+    if (exists && exists.length) {
       return res.status(200).json({ ok: true, message: 'Already requested or member' });
     }
 
-    await db.query(
-      'INSERT INTO user_clubs (user_id, club_id, role, status) VALUES ($1, $2, $3, $4)',
-      [userId, clubId, 'member', 'pending']
-    );
+    const { error: insErr } = await supabase
+      .from('user_clubs')
+      .insert([{ user_id: userId, club_id: clubId, role: 'member', status: 'pending' }]);
+    if (insErr) return res.status(500).json({ error: insErr.message });
     return res.status(201).json({ ok: true, message: 'Join request submitted' });
   } catch (err) {
     return res.status(500).json({ error: 'Internal Server Error' });
@@ -89,22 +93,34 @@ async function getPendingRequests(req, res) {
 
     if (!clubId) return res.status(400).json({ error: 'clubId is required' });
     // Verify requester is admin of the club
-    const adminCheck = await db.query(
-      "SELECT 1 FROM user_clubs WHERE user_id = $1 AND club_id = $2 AND role = 'admin' AND status = 'approved' LIMIT 1",
-      [userId, clubId]
-    );
-    
-    if (!adminCheck.rows.length) return res.status(403).json({ error: 'Forbidden' });
+    const { data: adminRows, error: admErr } = await supabase
+      .from('user_clubs')
+      .select('user_id')
+      .eq('user_id', userId)
+      .eq('club_id', clubId)
+      .eq('role', 'admin')
+      .eq('status', 'approved')
+      .limit(1);
+    if (admErr) return res.status(500).json({ error: admErr.message });
+    if (!adminRows || !adminRows.length) return res.status(403).json({ error: 'Forbidden' });
 
-    const { rows } = await db.query(
-      `SELECT  uc.user_id AS id, uc.status, u.name, u.email
-       FROM user_clubs uc
-       JOIN users u ON u.id = uc.user_id
-       WHERE uc.club_id = $1 AND uc.status = 'pending'
-       ORDER BY uc.user_id DESC`,
-      [clubId]
-    );
-    return res.json(rows);
+    const { data: pend, error: pendErr } = await supabase
+      .from('user_clubs')
+      .select('user_id,status')
+      .eq('club_id', clubId)
+      .eq('status', 'pending')
+      .order('user_id', { ascending: false });
+    if (pendErr) return res.status(500).json({ error: pendErr.message });
+    const ids = (pend || []).map(r => r.user_id);
+    if (!ids.length) return res.json([]);
+    const { data: users, error: usrErr } = await supabase
+      .from('users')
+      .select('id,name,email')
+      .in('id', ids);
+    if (usrErr) return res.status(500).json({ error: usrErr.message });
+    const userMap = new Map((users || []).map(u => [u.id, u]));
+    const out = (pend || []).map(r => ({ id: r.user_id, status: r.status, name: userMap.get(r.user_id)?.name, email: userMap.get(r.user_id)?.email }));
+    return res.json(out);
   } 
   catch (err) {
     console.log(err)
@@ -127,18 +143,23 @@ async function updateUserClubStatus(req, res) {
     }
 
     // Verify requester is approved admin of the club
-    const adminCheck = await db.query(
-      "SELECT 1 FROM user_clubs WHERE user_id = $1 AND club_id = $2 AND role = 'admin' AND status = 'approved' LIMIT 1",
-      [adminUserId, clubId]
-    );
-    if (!adminCheck.rows.length) return res.status(403).json({ error: 'Forbidden' });
+    const { data: adminRows, error: admErr } = await supabase
+      .from('user_clubs')
+      .select('user_id')
+      .eq('user_id', adminUserId)
+      .eq('club_id', clubId)
+      .eq('role', 'admin')
+      .eq('status', 'approved')
+      .limit(1);
+    if (admErr) return res.status(500).json({ error: admErr.message });
+    if (!adminRows || !adminRows.length) return res.status(403).json({ error: 'Forbidden' });
 
-    // Update only status for the composite key
-    const upd = await db.query(
-      'UPDATE user_clubs SET status = $1 WHERE user_id = $2 AND club_id = $3',
-      [status, targetUserId, clubId]
-    );
-    if (upd.rowCount === 0) return res.status(404).json({ error: 'Request not found' });
+    const { error } = await supabase
+      .from('user_clubs')
+      .update({ status })
+      .eq('user_id', targetUserId)
+      .eq('club_id', clubId);
+    if (error) return res.status(500).json({ error: error.message });
 
     return res.json({ ok: true, message: 'Status updated' });
   } catch (err) {
@@ -154,21 +175,34 @@ async function getClubMembers(req, res) {
     const clubId = req.params.clubId;
     if (!clubId) return res.status(400).json({ error: 'clubId is required' });
 
-    const adminCheck = await db.query(
-      "SELECT 1 FROM user_clubs WHERE user_id = $1 AND club_id = $2 AND role = 'admin' AND status = 'approved' LIMIT 1",
-      [userId, clubId]
-    );
-    if (!adminCheck.rows.length) return res.status(403).json({ error: 'Forbidden' });
+    const { data: adminRows, error: admErr } = await supabase
+      .from('user_clubs')
+      .select('user_id')
+      .eq('user_id', userId)
+      .eq('club_id', clubId)
+      .eq('role', 'admin')
+      .eq('status', 'approved')
+      .limit(1);
+    if (admErr) return res.status(500).json({ error: admErr.message });
+    if (!adminRows || !adminRows.length) return res.status(403).json({ error: 'Forbidden' });
 
-    const { rows } = await db.query(
-      `SELECT uc.user_id, uc.role, u.name, u.email
-       FROM user_clubs uc
-       JOIN users u ON u.id = uc.user_id
-       WHERE uc.club_id = $1 AND uc.status = 'approved'
-       ORDER BY u.name ASC`,
-      [clubId]
-    );
-    return res.json(rows);
+    const { data: approved, error: appErr } = await supabase
+      .from('user_clubs')
+      .select('user_id,role')
+      .eq('club_id', clubId)
+      .eq('status', 'approved');
+    if (appErr) return res.status(500).json({ error: appErr.message });
+    const ids = (approved || []).map(r => r.user_id);
+    if (!ids.length) return res.json([]);
+    const { data: users, error: usrErr } = await supabase
+      .from('users')
+      .select('id,name,email')
+      .in('id', ids)
+      .order('name', { ascending: true });
+    if (usrErr) return res.status(500).json({ error: usrErr.message });
+    const roleMap = new Map((approved || []).map(r => [r.user_id, r.role]));
+    const out = (users || []).map(u => ({ user_id: u.id, role: roleMap.get(u.id), name: u.name, email: u.email }));
+    return res.json(out);
   } catch (err) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
@@ -189,21 +223,30 @@ async function updateUserClubStatusV2(req, res) {
       return res.status(400).json({ error: 'Invalid status' });
     }
 
-    const adminCheck = await db.query(
-      "SELECT 1 FROM user_clubs WHERE user_id = $1 AND club_id = $2 AND role = 'admin' AND status = 'approved' LIMIT 1",
-      [adminUserId, clubId]
-    );
-    if (!adminCheck.rows.length) return res.status(403).json({ error: 'Forbidden' });
+    const { data: adminRows, error: admErr } = await supabase
+      .from('user_clubs')
+      .select('user_id')
+      .eq('user_id', adminUserId)
+      .eq('club_id', clubId)
+      .eq('role', 'admin')
+      .eq('status', 'approved')
+      .limit(1);
+    if (admErr) return res.status(500).json({ error: admErr.message });
+    if (!adminRows || !adminRows.length) return res.status(403).json({ error: 'Forbidden' });
 
-    const { rows } = await db.query(
-      'UPDATE user_clubs SET status = $1 WHERE user_id = $2 AND club_id = $3 RETURNING user_id AS id, club_id, role, status',
-      [status, targetUserId, clubId]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Request not found' });
-    return res.json(rows[0]);
+    const { data, error } = await supabase
+      .from('user_clubs')
+      .update({ status })
+      .eq('user_id', targetUserId)
+      .eq('club_id', clubId)
+      .select('user_id, club_id, role, status')
+      .single();
+    if (error) return res.status(500).json({ error: error.message });
+    if (!data) return res.status(404).json({ error: 'Request not found' });
+    return res.json({ id: data.user_id, club_id: data.club_id, role: data.role, status: data.status });
   } catch (err) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
-module.exports = { listClubs, listClubsWithStatus, createClub, joinClub, getPendingRequests, updateUserClubStatus, getClubMembers, updateUserClubStatusV2};
+export { listClubs, listClubsWithStatus, createClub, joinClub, getPendingRequests, updateUserClubStatus, getClubMembers, updateUserClubStatusV2 };

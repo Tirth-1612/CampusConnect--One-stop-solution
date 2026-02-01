@@ -1,5 +1,5 @@
-const db = require('../database');
-const { insertDynamic, selectAll } = require('../modules/dbUtil');
+import { supabase } from '../database.js';
+import { insertDynamic, selectAll } from '../modules/dbUtil.js';
 
 // Public: list announcements with optional filters department, type
 async function listAnnouncements(req, res) {
@@ -39,11 +39,14 @@ async function createAnnouncement(req, res) {
         return res.status(403).json({ error: 'Forbidden' });
       }
       // Verify club membership
-      const clubCheck = await db.query(
-        'SELECT 1 FROM user_clubs WHERE user_id = $1 AND club_id = $2 LIMIT 1',
-        [req.user.userId, body.club_id]
-      );
-      if (!clubCheck.rows.length) {
+      const { data: clubCheck, error: ccErr } = await supabase
+        .from('user_clubs')
+        .select('user_id')
+        .eq('user_id', req.user.userId)
+        .eq('club_id', body.club_id)
+        .limit(1);
+      if (ccErr) return res.status(500).json({ error: ccErr.message });
+      if (!clubCheck || !clubCheck.length) {
         return res.status(403).json({ error: 'Forbidden: not a member of the club' });
       }
     }
@@ -68,4 +71,4 @@ async function createAnnouncement(req, res) {
   }
 }
 
-module.exports = { listAnnouncements, createAnnouncement };
+export { listAnnouncements, createAnnouncement };

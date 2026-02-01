@@ -1,6 +1,6 @@
-const { verifyToken } = require('./auth');
+import { verifyToken } from './auth.js';
 
-function authMiddleware(req, res, next) {
+export default function authMiddleware(req, res, next) {
   try {
     const authHeader = req.headers['authorization'] || '';
     const parts = authHeader.split(' ');
@@ -19,4 +19,3 @@ function authMiddleware(req, res, next) {
   }
 }
 
-module.exports = authMiddleware;

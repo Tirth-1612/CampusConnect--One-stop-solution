@@ -1,12 +1,13 @@
-const db = require('../database');
+import { supabase } from '../database.js';
 
-async function getUsersCount(req, res){
+export async function getUsersCount(req, res){
   try{
-    const { rows } = await db.query('SELECT COUNT(*)::int AS count FROM users');
-    return res.json({ count: rows[0]?.count || 0 });
+    const { count, error } = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true });
+    if (error) return res.status(500).json({ error: error.message });
+    return res.json({ count: count || 0 });
   } catch(err){
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
-
-module.exports = { getUsersCount };

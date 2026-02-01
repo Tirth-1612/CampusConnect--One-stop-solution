@@ -1,8 +1,9 @@
-const express = require('express');
+import express from 'express';
+import auth from '../modules/authMiddleware.js';
+import authorize from '../modules/authorize.js';
+import { listClubs, listClubsWithStatus, createClub, joinClub, getPendingRequests, updateUserClubStatus, getClubMembers, updateUserClubStatusV2 } from '../controllers/clubsController.js';
+
 const router = express.Router();
-const auth = require('../modules/authMiddleware');
-const authorize = require('../modules/authorize');
-const { listClubs, listClubsWithStatus, createClub, joinClub, getPendingRequests, updateUserClubStatus, getClubMembers, updateUserClubStatusV2 } = require('../controllers/clubsController');
 
 //get the list of all clubs
 router.get('/list', listClubs);
@@ -28,4 +29,4 @@ router.get('/:clubId/members', auth, getClubMembers);
 // New: Update status with explicit endpoint and return updated row
 router.patch('/:clubId/users/:userId/status', auth, updateUserClubStatusV2);
 
-module.exports = router;
+export default router;

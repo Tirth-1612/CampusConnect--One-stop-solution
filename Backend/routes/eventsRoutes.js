@@ -1,9 +1,10 @@
-const express = require('express');
+import express from 'express';
+import auth from '../modules/authMiddleware.js';
+import { listEvents, createEvent } from '../controllers/eventsController.js';
+
 const router = express.Router();
-const auth = require('../modules/authMiddleware');
-const { listEvents, createEvent } = require('../controllers/eventsController');
 
 router.get('/list', listEvents);
 router.post('/create', auth, createEvent);
 
-module.exports = router;
+export default router;

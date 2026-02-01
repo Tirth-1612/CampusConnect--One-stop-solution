@@ -1,4 +1,4 @@
-function authorize(allowedRoles = []) {
+export default function authorize(allowedRoles = []) {
   const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
   return (req, res, next) => {
     if (!req.user) {
@@ -10,5 +10,3 @@ function authorize(allowedRoles = []) {
     return res.status(403).json({ error: 'Forbidden' });
   };
 }
-
-module.exports = authorize;

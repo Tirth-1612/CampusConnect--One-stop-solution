@@ -1,7 +1,7 @@
-const db = require('../database');
-const { insertDynamic, selectAll } = require('../modules/dbUtil');
+import { supabase } from '../database.js';
+import { insertDynamic, selectAll } from '../modules/dbUtil.js';
 
-async function listEvents(req, res) {
+export async function listEvents(req, res) {
   try {
     const rows = await selectAll('events');
     return res.json(rows);
@@ -11,7 +11,7 @@ async function listEvents(req, res) {
 }
 
 //title,role,starttime,category comulsory, description optional
-async function createEvent(req, res) {
+export async function createEvent(req, res) {
   try {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     const role = req.user.role;
@@ -42,6 +42,5 @@ async function createEvent(req, res) {
   catch (err) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
-}
+};
 
-module.exports = { listEvents, createEvent };

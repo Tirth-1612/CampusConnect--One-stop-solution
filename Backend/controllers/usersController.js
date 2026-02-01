@@ -1,5 +1,5 @@
-const db = require('../database');
-const { hashPassword, comparePassword, signToken } = require('../modules/auth');
+import { supabase } from '../database.js';
+import { hashPassword, comparePassword, signToken } from '../modules/auth.js';
 
 //req : name,email,password,role,department,year
 async function signup(req, res) {
@@ -12,16 +12,23 @@ async function signup(req, res) {
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ error: 'invalid role' });
     }
-    const existing = await db.query('SELECT id FROM users WHERE email = $1', [email]);
-    if (existing.rows.length) {
+    const { data: existing, error: existErr } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .limit(1);
+    if (existErr) return res.status(500).json({ error: 'Internal Server Error' });
+    if (existing && existing.length) {
       return res.status(400).json({ error: 'email already in use' });
     }
     const password_hash = await hashPassword(password);
-    const insert = await db.query(
-      'INSERT INTO users (name, email, password_hash, role,department,year) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id, email, role',
-      [name,email, password_hash, role,department,year]
-    );
-    const user = insert.rows[0];
+    const { data: inserted, error: insErr } = await supabase
+      .from('users')
+      .insert([{ name, email, password_hash, role, department, year }])
+      .select('id, email, role')
+      .single();
+    if (insErr) return res.status(500).json({ error: 'Internal Server Error' });
+    const user = inserted;
     const token = signToken({ userId: user.id, role: user.role });
     return res.status(201).json({ token, user });
   } 
@@ -38,11 +45,15 @@ async function login(req, res) {
     if (!email || !password) {
       return res.status(400).json({ error: 'email and password are required' });
     }
+    const { data: users, error } = await supabase
+      .from('users')
+      .select('id, email, role, password_hash')
+      .eq('email', email)
+      .limit(1);
+    if (error) return res.status(500).json({ error: 'Internal Server Error' });
+    if (!users || !users.length) return res.status(401).json({ error: 'Invalid credentialsA' });
 
-    const q = await db.query('SELECT id, email, role, password_hash FROM users WHERE email = $1', [email]);
-    if (!q.rows.length) return res.status(401).json({ error: 'Invalid credentialsA' });
-
-    const user = q.rows[0];
+    const user = users[0];
     const ok = await comparePassword(password, user.password_hash);
 
     if (!ok) {return res.status(401).json({ error: 'Invalid credentialsB' });}
@@ -66,50 +77,36 @@ async function update(req,res){
     const userId = req.user.userId;
     const { name, department, year, password } = req.body || {};
 
-    const updates = [];
-    const values = [];
+    const patch = {};
+    if (typeof name === 'string' && name.trim().length) patch.name = name;
+    if (typeof department === 'string' && department.trim().length) patch.department = department;
+    if (year !== undefined && year !== null) patch.year = year;
 
-    if (typeof name === 'string' && name.trim().length){
-      updates.push('name = $' + (values.length + 1));
-      values.push(name);
-    }
-    if (typeof department === 'string' && department.trim().length){
-      updates.push('department = $' + (values.length + 1));
-      values.push(department);
-    }
-    if (year !== undefined && year !== null){
-      updates.push('year = $' + (values.length + 1));
-      values.push(year);
-    }
-
-    // Optional password update (hash before saving)
     if (password !== undefined) {
       if (typeof password !== 'string' || password.length < 6) {
         return res.status(400).json({ error: 'Invalid password' });
       }
-      const password_hash = await hashPassword(password);
-      updates.push('password_hash = $' + (values.length + 1));
-      values.push(password_hash);
+      patch.password_hash = await hashPassword(password);
     }
 
-    if (updates.length === 0){
+    if (!Object.keys(patch).length){
       return res.status(400).json({ error: 'No valid fields to update' });
     }
 
-    const setClause = updates.join(', ');
-    const q = `UPDATE users SET ${setClause} WHERE id = $${values.length + 1} RETURNING id, name, email, role, department, year`;
-    values.push(userId);
+    const { data, error } = await supabase
+      .from('users')
+      .update(patch)
+      .eq('id', userId)
+      .select('id, name, email, role, department, year')
+      .single();
+    if (error) return res.status(500).json({ error: 'Internal Server Error' });
+    if (!data) return res.status(404).json({ error: 'User not found' });
 
-    const result = await db.query(q, values);
-    if (!result.rows.length){
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    return res.json({ user: result.rows[0] });
+    return res.json({ user: data });
   }
   catch(err){
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
 
-module.exports = { signup, login ,update};
+export { signup, login ,update };

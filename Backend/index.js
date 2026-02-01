@@ -1,40 +1,50 @@
-const express = require('express')
-const app = express()
-require('dotenv').config()
-const db = require('./database')
-const authRoutes = require('./routes/usersRoutes')
-const announcementsRoutes = require('./routes/announcementsRoutes')
-const eventsRoutes = require('./routes/eventsRoutes')
-const clubsRoutes = require('./routes/clubsRoutes')
-const savedRoutes = require('./routes/savedRoutes')
-const adminRoutes = require('./routes/adminRoutes')
-const cors = require('cors')
+import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-//middlewares
+dotenv.config({ path: path.join(__dirname, '.env') });
+
+import express from 'express';
+import cors from 'cors';
+
+import authRoutes from './routes/usersRoutes.js';
+import announcementsRoutes from './routes/announcementsRoutes.js';
+import eventsRoutes from './routes/eventsRoutes.js';
+import clubsRoutes from './routes/clubsRoutes.js';
+import savedRoutes from './routes/savedRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import './database.js';
+
+const app = express();
+
+// middlewares
 app.use(cors({
-  origin: ['http://localhost:5173',
-            'https://campusconnect1-3rlsb15do-kavishdesai07-3013s-projects.vercel.app/'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS','PATCH'],
+  origin: [
+    'http://localhost:5173',
+    'https://campusconnect1-3rlsb15do-kavishdesai07-3013s-projects.vercel.app'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
 }));
-app.use(express.json())
-app.use(express.urlencoded({extended:true}))
 
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-//routes
-app.use('/api/users', authRoutes)
-app.use('/api/announcements', announcementsRoutes)
-app.use('/api/events', eventsRoutes)
-app.use('/api/clubs', clubsRoutes)
-app.use('/api/saved', savedRoutes)
-app.use('/api/admin', adminRoutes)
-    
-//server
-const PORT = process.env.PORT || 5000
-app.listen(PORT, ()=>console.log('Server is operational'))
+// routes
+app.use('/api/users', authRoutes);
+app.use('/api/announcements', announcementsRoutes);
+app.use('/api/events', eventsRoutes);
+app.use('/api/clubs', clubsRoutes);
+app.use('/api/saved', savedRoutes);
+app.use('/api/admin', adminRoutes);
 
+// server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log('Server is operational'));
 
 
 

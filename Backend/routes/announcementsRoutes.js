@@ -1,10 +1,11 @@
-const express = require('express');
+import express from 'express';
+import auth from '../modules/authMiddleware.js';
+import authorize from '../modules/authorize.js';
+import { listAnnouncements, createAnnouncement } from '../controllers/announcementsController.js';
+
 const router = express.Router();
-const auth = require('../modules/authMiddleware');
-const authorize = require('../modules/authorize');
-const { listAnnouncements, createAnnouncement } = require('../controllers/announcementsController');
 
 router.get('/list', listAnnouncements);
 router.post('/create', auth, createAnnouncement);
 
-module.exports = router;
+export default router;
