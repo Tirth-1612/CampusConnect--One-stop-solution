@@ -23,8 +23,8 @@ const app = express();
 // middlewares
 app.use(cors({
   origin: [
-    'http://localhost:5173',
-    /^https:\/\/campusconnect1-.*\.vercel\.app$/
+    /^https:\/\/campusconnect1-.*\.vercel\.app$/,
+    'http://localhost:5173'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
