@@ -23,7 +23,7 @@ const app = express();
 // middlewares
 app.use(cors({
   origin: [
-    /^https:\/\/campusconnect2-.*\.vercel\.app$/,
+    'https://campusconnect2-cyan.vercel.app/',
     'http://localhost:5173'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
