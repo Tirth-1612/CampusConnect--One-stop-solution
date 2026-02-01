@@ -24,7 +24,7 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:5173',
-    'https://campusconnect1-3rlsb15do-kavishdesai07-3013s-projects.vercel.app'
+    /^https:\/\/campusconnect1-.*\.vercel\.app$/
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
