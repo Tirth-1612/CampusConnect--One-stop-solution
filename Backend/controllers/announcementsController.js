@@ -61,12 +61,12 @@ async function createAnnouncement(req, res) {
     const data = {
       ...body,
       created_by: req.user.userId,
-      created_by_role: role,
     };
 
     const inserted = await insertDynamic('announcements', data);
     return res.status(201).json(inserted);
   } catch (err) {
+    console.log(err)
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

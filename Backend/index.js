@@ -21,18 +21,29 @@ import './database.js';
 const app = express();
 
 // middlewares
-const allowed = (process.env.FRONTEND_ORIGINS || '')
+// Place this above app.use(cors(...))
+const normalizeOrigin = (s) => (s || '').trim().replace(/\/+$/, '');
+
+// If FRONTEND_ORIGINS is unset, default to localhost:5173
+const originsEnv = process.env.FRONTEND_ORIGINS && process.env.FRONTEND_ORIGINS.trim()
+  ? process.env.FRONTEND_ORIGINS
+  : 'http://localhost:5173';
+
+const allowed = originsEnv
   .split(',')
-  .map(s => s.trim())
+  .map((s) => normalizeOrigin(s))
   .filter(Boolean);
 
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // allow Postman / server calls
-    if (allowed.some(a =>
-      origin === a || (a.startsWith('*.') && origin.endsWith(a.slice(1))))) 
-    {return callback(null, true);}
-    return callback(new Error('Not allowed by CORS'), false);
+    if (!origin) return callback(null, true); // allow Postman/server-to-server
+    const o = normalizeOrigin(origin);
+    const ok = allowed.some((a) => {
+      // exact match or wildcard like *.vercel.app
+      if (a.startsWith('*.')) return o.endsWith(a.slice(1));
+      return o === a;
+    });
+    return ok ? callback(null, true) : callback(new Error('Not allowed by CORS'), false);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],

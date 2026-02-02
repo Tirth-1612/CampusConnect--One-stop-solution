@@ -20,7 +20,6 @@ export default function CreateAnnouncement(){
         title: form.title,
         description: form.description,
         type: form.type,
-        department: form.department || user?.department || undefined,
         club_id: form.type === 'Club' ? Number(form.club_id) || undefined : undefined,
       };
       const ok = await createAnnouncement(token, payload);
@@ -42,7 +41,6 @@ export default function CreateAnnouncement(){
           <option value="Placement">Placement</option>
           {user?.role === 'admin' && <option value="Club">Club</option>}
         </SelectInput>
-        <TextInput label="Department" value={form.department} onChange={e=>update('department', e.target.value)} placeholder={user?.department || ''} />
         {form.type === 'Club' && (
           <TextInput label="Club ID" value={form.club_id} onChange={e=>update('club_id', e.target.value)} required />
         )}

@@ -21,6 +21,7 @@ export async function createEvent(req, res) {
     }
 
     const body = req.body || {};
+    console.log(body)
     // Validation
     const required = ['title', 'event_date']; 
     for (const f of required) {
@@ -33,7 +34,6 @@ export async function createEvent(req, res) {
     const data = {
       ...body,
       created_by: req.user.userId,
-      created_by_role: role,
     };
 
     const inserted = await insertDynamic('events', data);
