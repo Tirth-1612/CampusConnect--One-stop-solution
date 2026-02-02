@@ -21,11 +21,19 @@ import './database.js';
 const app = express();
 
 // middlewares
+const allowed = (process.env.FRONTEND_ORIGINS || '')
+  .split(',')
+  .map(s => s.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: [
-    'https://campusconnect2-cyan.vercel.app/',
-    'http://localhost:5173'
-  ],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // allow Postman / server calls
+    if (allowed.some(a =>
+      origin === a || (a.startsWith('*.') && origin.endsWith(a.slice(1))))) 
+    {return callback(null, true);}
+    return callback(new Error('Not allowed by CORS'), false);
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
