@@ -22,6 +22,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminProfile from './pages/admin/Profile';
 import AdminCreateAnnouncement from './pages/admin/CreateAnnouncement';
 import AdminCreateEvent from './pages/admin/CreateEvent';
+import AdminCreateClub from './pages/admin/CreateClub';
 import JoinRequests from './pages/admin/JoinRequests';
 import ClubMembers from './pages/admin/ClubMembers';
 
@@ -59,6 +60,7 @@ function App() {
           <Route path="/dashboard/admin/profile" element={<AdminProfile />} />
           <Route path="/dashboard/admin/announcements/create" element={<AdminCreateAnnouncement />} />
           <Route path="/dashboard/admin/events/create" element={<AdminCreateEvent />} />
+          <Route path="/dashboard/admin/clubs/create" element={<AdminCreateClub />} />
           <Route path="/dashboard/admin/requests" element={<JoinRequests />} />
           <Route path="/dashboard/admin/members" element={<ClubMembers />} />
         </Route>

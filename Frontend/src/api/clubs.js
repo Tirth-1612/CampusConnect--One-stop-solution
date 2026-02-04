@@ -34,3 +34,8 @@ export async function updateMemberStatus(token, clubId, userId, status){
   const res = await apiPatch(`/api/clubs/${clubId}/users/${userId}/status`, { status }, token);
   return res.ok ? res.data : null;
 }
+
+export async function createClub(token, body){
+  const res = await apiPost('/api/clubs/create', body, token);
+  return res.ok;
+}

@@ -8,7 +8,7 @@ async function signup(req, res) {
     if (!email || !password || !role) {
       return res.status(400).json({ error: 'email, password, and role are required' });
     }
-    const allowedRoles = ['student', 'club', 'faculty', 'admin'];/////////////////remove admin
+    const allowedRoles = ['student', 'faculty'];
     if (!allowedRoles.includes(role)) {
       return res.status(400).json({ error: 'invalid role' });
     }

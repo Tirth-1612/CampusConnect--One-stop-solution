@@ -26,6 +26,7 @@ export default function Sidebar(){
       { to:'/dashboard/admin/profile', label:'Profile' },
       { to:'/dashboard/admin/announcements/create', label:'Create Announcement' },
       { to:'/dashboard/admin/events/create', label:'Create Event' },
+      { to:'/dashboard/admin/clubs/create', label:'Create Club' },
       { to:'/dashboard/admin/requests', label:'Join Requests' },
       { to:'/dashboard/admin/members', label:'Club Members' },
     ],
