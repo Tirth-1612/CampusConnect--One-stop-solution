@@ -32,7 +32,6 @@ export default function CreateClub() {
     setSubmitting(false);
     if (ok) {
       setSuccess('Club created successfully');
-      setTimeout(() => navigate('/dashboard/admin'), 800);
     } else {
       setError('Failed to create club');
     }
