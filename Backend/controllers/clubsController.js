@@ -24,11 +24,13 @@ async function listClubsWithStatus(req, res) {
       .from('user_clubs')
       .select('club_id,status')
       .eq('user_id', userId);
+
     if (memErr) return res.status(500).json({ error: memErr.message });
     const statusMap = new Map((memberships || []).map(m => [String(m.club_id), m.status]));
     const out = (clubs || []).map(c => ({ ...c, membership_status: statusMap.get(String(c.id)) || null }));
     return res.json(out);
-  } catch (err) {
+  } 
+  catch (err) {
     return res.status(500).json({ error: 'Internal Server Error' });
   }
 }
@@ -39,7 +41,15 @@ async function createClub(req, res) {
     if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
     if (req.user.role !== 'admin') return res.status(403).json({ error: 'Forbidden' });
     const body = req.body || {};
-    const inserted = await insertDynamic('clubs', body);
+    const name = (body.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'Name is required' });
+    const payload = {
+      name,
+      description: (body.description || '').trim() || null,
+      image_url: (body.image_url || '').trim() || null,
+      created_at: new Date().toISOString(),
+    };
+    const inserted = await insertDynamic('clubs', payload);
     // Add creator as club admin in user_clubs
     try {
       if (inserted && inserted.id) {

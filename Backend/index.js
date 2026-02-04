@@ -20,8 +20,7 @@ import './database.js';
 
 const app = express();
 
-// middlewares
-// Place this above app.use(cors(...))
+//CORS
 const normalizeOrigin = (s) => (s || '').trim().replace(/\/+$/, '');
 
 // If FRONTEND_ORIGINS is unset, default to localhost:5173
@@ -50,6 +49,7 @@ app.use(cors({
   credentials: true
 }));
 
+// middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
