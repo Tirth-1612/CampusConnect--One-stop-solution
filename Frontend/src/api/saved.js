@@ -14,11 +14,12 @@ export async function saveItem(token, item_id, item_type){
   const res = await apiPost(`/api/saved/saveItem`, { item_id, item_type }, ensureToken(token));
   if (!res.ok) {
     console.log(res);
-    return false;
+    return null; // signal failure so callers don't toggle UI
   }
-  // If backend returns { ok: true, saved: false } for duplicates, treat as already-saved
-  if (typeof res.data?.saved !== 'undefined') {return !!res.data.saved;}
-  return true;
+  if (typeof res.data?.saved !== 'undefined') {
+    return !!res.data.saved; // true when saved (inserted), false when unsaved (deleted)
+  }
+  return null; // unexpected shape; do not toggle UI
 }
 
 export async function listSavedAnnouncements(token){

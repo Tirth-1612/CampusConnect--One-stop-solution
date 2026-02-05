@@ -36,16 +36,44 @@ export default function StudentDashboard(){
 
   async function onSaveAnnouncement(item){
     try{
-      const ok = await saveItem(token, item.id, 'announcement');
-      if (ok) setSavedAnns(prev => new Set(prev).add(item.id));
-    } catch(err){console.log(err)}
+      const saved = await saveItem(token, item.id, 'announcement');
+      if (saved === true) {
+        setSavedAnns(prev => {
+          const next = new Set(prev);
+          next.add(item.id);
+          return next;
+        });
+      } else if (saved === false) {
+        setSavedAnns(prev => {
+          const next = new Set(prev);
+          next.delete(item.id);
+          return next;
+        });
+      } else {
+        // null/undefined -> API failed or unexpected; do not toggle UI
+      }
+    } catch(err){ console.log(err); }
   }
 
   async function onSaveEvent(item){
     try{
-      const ok = await saveItem(token, item.id, 'event');
-      if (ok) setSavedEvents(prev => new Set(prev).add(item.id));
-    } catch(err){console.log(err)}
+      const saved = await saveItem(token, item.id, 'event');
+      if (saved === true) {
+        setSavedEvents(prev => {
+          const next = new Set(prev);
+          next.add(item.id);
+          return next;
+        });
+      } else if (saved === false) {
+        setSavedEvents(prev => {
+          const next = new Set(prev);
+          next.delete(item.id);
+          return next;
+        });
+      } else {
+        // null/undefined -> API failed or unexpected; do not toggle UI
+      }
+    } catch(err){ console.log(err); }
   }
 
   return (

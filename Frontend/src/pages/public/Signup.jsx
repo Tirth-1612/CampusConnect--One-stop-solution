@@ -38,7 +38,15 @@ export default function Signup(){
           <option value="faculty">Faculty</option>
         </SelectInput>
         
-        <TextInput label="Department" value={form.department} onChange={e=>update('department', e.target.value)} />
+        <SelectInput label="Department" value={form.department} onChange={e=>update('department', e.target.value)}>
+          <option value="student">CS/IT</option>
+          <option value="faculty">EXTC/EE</option>
+          <option value="student">Mechanical</option>
+          <option value="faculty">Production</option>
+          <option value="student">Civil</option>
+          <option value="faculty">Textile</option>
+        </SelectInput>
+
         <TextInput label="Year" type="number" value={form.year} onChange={e=>update('year', Number(e.target.value))} />
         <button className="btn" type="submit">Create account</button>
         <Link to="/login" className="link text-center">Back to login</Link>

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { createClub as apiCreateClub } from '../../api/clubs';
 import DashboardLayout from '../../layouts/DashboardLayout';
+import SelectInput from '../../components/forms/SelectInput';
+import TextInput from '../../components/forms/TextInput';
 
 export default function CreateClub() {
   const { token } = useAuth();
@@ -44,7 +46,7 @@ export default function CreateClub() {
         <form className="col gap-sm" onSubmit={onSubmit}>
           <label className="col gap-xs">
             <span>Name</span>
-            <input
+            <TextInput
               name="name"
               value={form.name}
               onChange={onChange}
@@ -54,7 +56,7 @@ export default function CreateClub() {
           </label>
           <label className="col gap-xs">
             <span>Description</span>
-            <textarea
+            <TextInput
               name="description"
               value={form.description}
               onChange={onChange}
@@ -64,7 +66,7 @@ export default function CreateClub() {
           </label>
           <label className="col gap-xs">
             <span>Image URL</span>
-            <input
+            <TextInput
               name="image_url"
               value={form.image_url}
               onChange={onChange}

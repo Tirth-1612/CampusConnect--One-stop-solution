@@ -40,8 +40,8 @@ function App() {
           <Route path="/dashboard/student" element={<StudentDashboard />} />
           <Route path="/dashboard/student/profile" element={<StudentProfile />} />
           <Route path="/dashboard/student/clubs" element={<StudentClubs />} />
-          {/* <Route path="/dashboard/student/saved/announcements" element={<StudentSavedAnnouncements />} />
-          <Route path="/dashboard/student/saved/events" element={<StudentSavedEvents />} /> */}
+          <Route path="/dashboard/student/saved/announcements" element={<StudentSavedAnnouncements />} />
+          <Route path="/dashboard/student/saved/events" element={<StudentSavedEvents />} />
         </Route>
 
         {/* Faculty */}
@@ -50,8 +50,8 @@ function App() {
           <Route path="/dashboard/faculty/profile" element={<FacultyProfile />} />
           <Route path="/dashboard/faculty/announcements/create" element={<CreateAnnouncementFaculty />} />
           <Route path="/dashboard/faculty/events/create" element={<CreateEventFaculty />} />
-          {/* <Route path="/dashboard/faculty/saved/announcements" element={<FacultySavedAnnouncements />} />
-          <Route path="/dashboard/faculty/saved/events" element={<FacultySavedEvents />} /> */}
+          <Route path="/dashboard/faculty/saved/announcements" element={<FacultySavedAnnouncements />} />
+          <Route path="/dashboard/faculty/saved/events" element={<FacultySavedEvents />} />
         </Route>
 
         {/* Admin */}

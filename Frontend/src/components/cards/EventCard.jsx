@@ -6,9 +6,9 @@ export default function EventCard({ item, onSave, saved }){
       <div className="card-subtle">{item.description}</div>
       <div className="card-subtle">Event on : {item.event_date}</div>
 
-      {/* {onSave && <div className="card-actions">
-        <button className="btn" disabled={!!saved} onClick={() => onSave(item)}>{saved ? 'Saved' : 'Save'}</button>
-      </div>} */}
+      {onSave && <div className="card-actions">
+        <button className="btn" onClick={() => onSave(item)}>{saved ? 'Unsave' : 'Save'}</button>
+      </div>}
     </div>
   );
 }
