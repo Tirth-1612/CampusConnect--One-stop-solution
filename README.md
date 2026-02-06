@@ -8,7 +8,7 @@ CampusConnect personalizes content for students based on attributes like year, d
 
 ### Key Features
 - Personalized dashboard for students
-- Role-based announcement creation (Student / Club / Faculty / Admin)
+- Role-based announcement creation (Student / Faculty / Admin)
 - Events with eligibility visibility and explanations
 - Clean, scalable frontend architecture
 - Designed for future AI-driven recommendations
@@ -25,3 +25,4 @@ CampusConnect personalizes content for students based on attributes like year, d
 ```bash
 npm install
 npm run dev
+
