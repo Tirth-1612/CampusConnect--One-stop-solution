@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import AnnouncementCard from '../../components/cards/AnnouncementCard';
 import EventCard from '../../components/cards/EventCard';
 import { listSaved, saveItem } from '../../api/saved';
+import { FiBell, FiCalendar, FiBookmark, FiTrendingUp, FiUsers, FiBookOpen } from 'react-icons/fi';
 
 export default function StudentDashboard(){
   const { user, token } = useAuth();
@@ -76,21 +77,159 @@ export default function StudentDashboard(){
     } catch(err){ console.log(err); }
   }
 
+  const stats = [
+    {
+      title: 'Total Announcements',
+      value: anns.length,
+      icon: FiBell,
+    },
+    {
+      title: 'Upcoming Events',
+      value: events.length,
+      icon: FiCalendar,
+    },
+    {
+      title: 'Saved Items',
+      value: savedAnns.size + savedEvents.size,
+      icon: FiBookmark,
+    },
+  ];
+
   return (
     <DashboardLayout>
-      <h2>Welcome, {user?.name || 'Student'}</h2>
-      {loading && <div className="loader" />}
-      {error && <div className="error">{error}</div>}
-      <div className="grid grid-cards">
-        {anns.map(a => (
-          <AnnouncementCard key={a.id} item={a} onSave={onSaveAnnouncement} saved={savedAnns.has(a.id)} />
-        ))}
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Welcome back, {user?.name || 'Student'}!</h1>
+          <p className="page-subtitle">
+            Here's what's happening on campus today. Stay updated with the latest announcements and events.
+          </p>
+        </div>
+        <div className="page-actions">
+          <button className="btn btn-primary">
+            <FiBookOpen />
+            Explore Clubs
+          </button>
+        </div>
       </div>
-      <h3 className="section-title">Events</h3>
-      <div className="grid grid-cards">
-        {events.map(ev => (
-          <EventCard key={ev.id} item={ev} onSave={onSaveEvent} saved={savedEvents.has(ev.id)} />
-        ))}
+
+      {/* Stats Grid */}
+      <div className="stats-grid">
+        {stats.map((stat, index) => {
+          const Icon = stat.icon;
+          return (
+            <div key={index} className="stat-card">
+              <div className="stat-icon">
+                <Icon />
+              </div>
+              <div className="stat-content">
+                <div className="stat-value">{stat.value}</div>
+                <div className="stat-label">{stat.title}</div>
+                <div className={`stat-change ${stat.changeType}`}>
+                  {stat.change}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {loading && (
+        <div className="content-section">
+          <div className="skeleton-grid">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="skeleton skeleton-card"></div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {error && (
+        <div className="content-section">
+          <div className="auth-error">
+            <FiAlertCircle />
+            <span>{error}</span>
+          </div>
+        </div>
+      )}
+
+      {/* Announcements Section */}
+      <div className="content-section">
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">Latest Announcements</h2>
+            <p className="section-subtitle">
+              Stay informed with important updates from your department and faculty
+            </p>
+          </div>
+          <div className="section-actions">
+            <button className="btn btn-ghost btn-sm">
+              View All
+            </button>
+          </div>
+        </div>
+        
+        {anns.length === 0 && !loading ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <FiBell />
+            </div>
+            <h3 className="empty-state-title">No announcements yet</h3>
+            <p className="empty-state-description">
+              Check back later for the latest announcements from your campus.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-auto">
+            {anns.slice(0, 6).map(a => (
+              <AnnouncementCard 
+                key={a.id} 
+                item={a} 
+                onSave={onSaveAnnouncement} 
+                saved={savedAnns.has(a.id)} 
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Events Section */}
+      <div className="content-section">
+        <div className="section-header">
+          <div>
+            <h2 className="section-title">Upcoming Events</h2>
+            <p className="section-subtitle">
+              Discover and participate in exciting campus events and activities
+            </p>
+          </div>
+          <div className="section-actions">
+            <button className="btn btn-ghost btn-sm">
+              View All
+            </button>
+          </div>
+        </div>
+        
+        {events.length === 0 && !loading ? (
+          <div className="empty-state">
+            <div className="empty-state-icon">
+              <FiCalendar />
+            </div>
+            <h3 className="empty-state-title">No upcoming events</h3>
+            <p className="empty-state-description">
+              Stay tuned for exciting events and activities on campus.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-auto">
+            {events.slice(0, 6).map(ev => (
+              <EventCard 
+                key={ev.id} 
+                item={ev} 
+                onSave={onSaveEvent} 
+                saved={savedEvents.has(ev.id)} 
+              />
+            ))}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );

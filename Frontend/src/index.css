@@ -1,3 +1,9 @@
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Import theme system */
+@import './styles/theme.css';
+
 /* Global reset and layout guards */
 html, body, #root {
   margin: 0;
@@ -7,28 +13,3 @@ html, body, #root {
 }
 *, *::before, *::after { box-sizing: border-box; }
 body { overflow-x: hidden; }
-
-/* Base defaults (kept minimal; theme colors come from theme.css) */
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a { font-weight: 500; color: var(--primary); text-decoration: none; }
-a:hover { text-decoration: underline; }
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: var(--bg-elev);
-  color: var(--text);
-  cursor: pointer;
-}
