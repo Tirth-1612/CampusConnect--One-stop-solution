@@ -61,7 +61,7 @@ export default function FacultyDashboard(){
 
   return (
     <DashboardLayout>
-      <h2>Faculty Dashboard{user ? ` - ${user.name}` : ''}</h2>
+      <h2>Faculty Dashboard</h2>
       {loading && <div className="loader" />}
       {error && <div className="error">{error}</div>}
       <h3 className="section-title">Announcements</h3>

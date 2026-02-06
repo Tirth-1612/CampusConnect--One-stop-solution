@@ -15,7 +15,7 @@ export default function ClubCard({ club, onJoin }){
 
   return (
     <div className="card stack">
-      <img className="media" src={club.image || 'https://via.placeholder.com/640x240'} alt="club" />
+      <img className="media" src={club.image_url || 'https://via.placeholder.com/640x240'} alt="club" />
       <div className="flex-row">
         <div>
           <div className="card-title">{club.name}</div>
